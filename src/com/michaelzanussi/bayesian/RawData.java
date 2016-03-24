@@ -36,8 +36,8 @@ public class RawData implements Serializable {
 		
 		tokenizer = null;
 		nGram = 0;
-		normal = new TokenTable(TokenTable.NORMAL_EMAIL);
-		spam = new TokenTable(TokenTable.SPAM_EMAIL);
+		normal = new TokenTable();
+		spam = new TokenTable();
 		
 	}
 

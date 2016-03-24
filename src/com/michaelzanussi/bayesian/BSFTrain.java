@@ -54,40 +54,40 @@ public class BSFTrain {
 	public static final int DUMP_MODE = 2;
 	
 	// The running mode, either training or dump.
-	private int _runMode;
+	private int runMode;
 
 	// The email type being trained, either 
 	// NORMAL_EMAIL or SPAM_EMAIL (see the class
 	// TokenTable).
-	private int _emailType;
+	private int emailType;
 	
 	// The statistical model file name.
-	private File _model;
+	private File model;
 	
 	// The log file.
-	private File _log;
+	private File log;
 
 	// The input file (either direct or standard input).
-	private File _file;
+	private File file;
 	
 	// The name of the tokenizer.
-	private String _tokenizer;
+	private String tokenizer;
 
 	// The command line arguments.
-	private String[] _args;
+	private String[] args;
 	
 	// Holds the normal and spam token tables.
-	private RawData _email;
+	private RawData email;
 	
 	// The NGram (for NGram-type tokenizers).
-	private int _nGram;
+	private int nGram;
 	
 	/**
 	 * No-arg constructor.
 	 */
 	BSFTrain() {
 		
-		this( null );
+		this(null);
 		
 	}
 	
@@ -96,17 +96,17 @@ public class BSFTrain {
 	 *
 	 * @param args the command line arguments.
 	 */
-	BSFTrain( String [] args ) {
+	BSFTrain(String[] args) {
 		
-		_args = args;
-		_email = null;
-		_file = null;
-		_log = null;
-		_nGram = 0;
-		_runMode = 0;
-		_emailType = 0;
-		_model = null;
-		_tokenizer = null;
+		this.args = args;
+		email = null;
+		file = null;
+		log = null;
+		nGram = 0;
+		runMode = 0;
+		emailType = 0;
+		model = null;
+		tokenizer = null;
 		
 	}
 
@@ -116,30 +116,30 @@ public class BSFTrain {
 	 */
 	public void run() {
 
-		Getopt option = new Getopt( "BSFTrain", _args, "df:g:k:l:m:nst" );
+		Getopt option = new Getopt("BSFTrain", args, "df:g:k:l:m:nst");
 		int ch;
-		while( ( ch = option.getopt() ) != -1 ) {
-			switch( ch ) {
+		while ((ch = option.getopt()) != -1) {
+			switch (ch) {
 				case 'd':
 					// Run BSFTrain in dump mode. Check to see if we're already in
 					// training mode (would indicate both modes were specified). We
 					// shouldn't assume what the user might want, so exit gracefully.
-					if( _runMode == TRAINING_MODE ) {
-						System.err.println( "ERROR: Training and Dump mode cannot run simultaneously." );
+					if (runMode == TRAINING_MODE) {
+						System.err.println("ERROR: Training and Dump mode cannot run simultaneously.");
 						usage();
 						System.exit(1);
 					}
-					_runMode = DUMP_MODE;
+					runMode = DUMP_MODE;
 					break;
 				case 'f':
 					// Set the file to process email from (optional).
-					_file = new File( option.getOptarg() );
+					file = new File(option.getOptarg());
 					break;
 				case 'g':
 					// Verify and set the nGram for this tokenizer.
-					_nGram = Integer.parseInt( option.getOptarg() );
-					if( _nGram < 1 ) {
-						System.err.println( "ERROR: nGram must be greater than 0." );
+					nGram = Integer.parseInt(option.getOptarg());
+					if (nGram < 1) {
+						System.err.println("ERROR: nGram must be greater than 0.");
 						usage();
 						System.exit(1);
 					}
@@ -147,81 +147,81 @@ public class BSFTrain {
 				case 'n':
 					// Process normal email. First, check to see if we're 
 					// already processing spam.
-					if( _emailType == TokenTable.SPAM_EMAIL ) {
-						System.err.println( "ERROR: Normal and Spam training mode cannot run simultaneously." );
+					if (emailType == TokenTable.SPAM_EMAIL) {
+						System.err.println("ERROR: Normal and Spam training mode cannot run simultaneously.");
 						usage();
 						System.exit(1);
 					}
-					_emailType = TokenTable.NORMAL_EMAIL;
+					emailType = TokenTable.NORMAL_EMAIL;
 					break;
 				case 's':
 					// Process spam email. First, check to see if we're 
 					// already processing normal email.
-					if( _emailType == TokenTable.NORMAL_EMAIL ) {
-						System.err.println( "ERROR: Normal and Spam training mode cannot run simultaneously." );
+					if (emailType == TokenTable.NORMAL_EMAIL) {
+						System.err.println("ERROR: Normal and Spam training mode cannot run simultaneously.");
 						usage();
 						System.exit(1);
 					}
-					_emailType = TokenTable.SPAM_EMAIL;
+					emailType = TokenTable.SPAM_EMAIL;
 					break;
 				case 't':
 					// Run BSFTrain in training mode. Check to see if we're already in
 					// dump mode (would indicate both modes were specified). We
 					// shouldn't assume what the user might want, so exit gracefully.
-					if( _runMode == DUMP_MODE ) {
-						System.err.println( "ERROR: Training and Dump mode cannot run simultaneously." );
+					if (runMode == DUMP_MODE) {
+						System.err.println("ERROR: Training and Dump mode cannot run simultaneously.");
 						usage();
 						System.exit(1);
 					}
-					_runMode = TRAINING_MODE;
+					runMode = TRAINING_MODE;
 					break;
 				case 'k':
 					// Set the tokenizer.
-					_tokenizer = option.getOptarg();
+					tokenizer = option.getOptarg();
 					break;
 				case 'l':
 					// Set the log file to use for dump mode.
-					_log = new File( option.getOptarg() );
+					log = new File(option.getOptarg());
 					break;
 				case 'm':
 					// Set the model statistics file. Assume extension has
 					// not been provided by user.
 					String fileName = option.getOptarg() + ".stat";
-					_model = new File( fileName );
+					model = new File(fileName);
 					break;
 				default:
 					// Unknown or illegal option, skip. If using getOpt,
 					// getOpt will return its own error messages.
 
 			}
+			
 		}
 		
 		// With command line options dealt with, check if a tokenizer and
 		// a statistical model file were passed to us.
-		if( _tokenizer == null ) {
-			System.err.println( "ERROR: A tokenizer was not specified.\n" );
+		if (tokenizer == null) {
+			System.err.println("ERROR: A tokenizer was not specified.\n");
 			usage();
 			System.exit(1);
-		}
-		else if( _model == null ) {
-			System.err.println( "ERROR: A statistical model file was not specified.\n" );
+		} else if (model == null) {
+			System.err.println("ERROR: A statistical model file was not specified.\n");
 			usage();
 			System.exit(1);
 		}
 
 		// Do something useful, depending on which mode we're running in...
-		switch( _runMode ) {
+		switch (runMode) {
 			case TRAINING_MODE:
 				// Check to see if the model file exists. If it does, load it.
 				// If not, create a new email table for specified type.
-				if( _model.exists() ) {
+				if (model.exists()) {
 					
 					// Open the existing model file.
-					System.out.println( "Loading model...");
+					System.out.println("Loading model...");
 					SerializedFileReader sfr = new SerializedFileReader();
-					sfr.open( _model );
-					_email = (RawData) sfr.readObject();
-					if( _email == null ) {
+					sfr.open(model);
+					email = (RawData)sfr.readObject();
+					if (email == null) {
 						throw new NullPointerException();
 					}
 					sfr.close();
@@ -229,94 +229,89 @@ public class BSFTrain {
 					// Verify the passed tokenizer is the same as the one stored. 
 					// If not, dump a warning message but continue processing by 
 					// reverting to the original tokenizer used.
-					if( !_tokenizer.equals( _email.getTokenizer() ) ) {
-						System.err.println( "Warning: The specified tokenizer is incompatible with the " );
-						System.err.println( "         stored data tokenizer. Reverting to stored version." );
-						System.err.println( "         Specified is [" + _tokenizer + "]" );
-						System.err.println( "         Stored is [" + _email.getTokenizer() + "]\n" );
-						_tokenizer = _email.getTokenizer();
-						_nGram = _email.getNGram();
-					}
-					else {
+					if (!tokenizer.equals(email.getTokenizer())) {
+						System.err.println("Warning: The specified tokenizer is incompatible with the ");
+						System.err.println("         stored data tokenizer. Reverting to stored version.");
+						System.err.println("         Specified is [" + tokenizer + "]");
+						System.err.println("         Stored is [" + email.getTokenizer() + "]\n");
+						tokenizer = email.getTokenizer();
+						nGram = email.getNGram();
+					} else {
 						// The tokenizer matches, now check for nGram conflicts.
-						if( _email.getNGram() != _nGram ) {
-							System.err.println( "Warning: The specified NGram is incompatible with the " );
-							System.err.println( "         stored NGram. Reverting to stored version." );
-							System.err.println( "         Specified is [" + _nGram + "]" );
-							System.err.println( "         Stored is [" + _email.getNGram() + "]\n" );
-							_nGram = _email.getNGram();
+						if (email.getNGram() != nGram) {
+							System.err.println("Warning: The specified NGram is incompatible with the ");
+							System.err.println("         stored NGram. Reverting to stored version.");
+							System.err.println("         Specified is [" + nGram + "]");
+							System.err.println("         Stored is [" + email.getNGram() + "]\n");
+							nGram = email.getNGram();
 						}
 					}
-				}
-				else {
+				} else {
 					// Model doesn't exist.
-					_email = new RawData();
+					email = new RawData();
 				}
 				
 				// Provide some helpful messages.
-				System.out.print( "Processing " );
-				System.out.print( _emailType == TokenTable.NORMAL_EMAIL ? "normal " : "spam " );
-				if( _file == null ) {
-					System.out.print( "email (standard input) using " );
+				System.out.print("Processing ");
+				System.out.print(emailType == TokenTable.NORMAL_EMAIL ? "normal " : "spam ");
+				if (file == null) {
+					System.out.print("email (standard input) using ");
+				} else {
+					System.out.print("email (" + file + ") using ");
 				}
-				else {
-					System.out.print( "email (" + _file + ") using " );
-				}
-				System.out.println( _tokenizer + "..." );
+				System.out.println(tokenizer + "...");
 				
 				// Process the email file!
-				int email = _email.process( _emailType, _file, _tokenizer, _nGram );
+				int nEmail = email.process(emailType, file, tokenizer, nGram);
 				
 				// Display some results.
-				System.out.println( "Processed: " + email + " email(s)." );
-				System.out.println( "Total now: " + _email.getEmailCount( _emailType ) + " email(s)." );
-				System.out.println( "Token cnt: " + _email.getTable( _emailType ).getTokenCount() );
+				System.out.println("Processed: " + nEmail + " email(s).");
+				System.out.println("Total now: " + email.getEmailCount(emailType) + " email(s).");
+				System.out.println("Token cnt: " + email.getTable(emailType).getTokenCount());
 				
 				// Write the object to disk, but only if email was processed.
-				if( email > 0 ) {
-					System.out.println( "Saving model...");
+				if (nEmail > 0) {
+					System.out.println("Saving model...");
 					SerializedFileWriter sfw = new SerializedFileWriter();
-					sfw.open( _model );
-					sfw.writeObject( _email );
+					sfw.open(model);
+					sfw.writeObject(email);
 					sfw.close();
 				}
 				break;
 			case DUMP_MODE:
-				if( _model.exists() ) {
+				if (model.exists()) {
 					// Open the model file.
-					System.out.println( "Loading model...");
+					System.out.println("Loading model...");
 					SerializedFileReader sfr = new SerializedFileReader();
-					sfr.open( _model );
-					_email = (RawData) sfr.readObject();
-					if( _email == null ) {
+					sfr.open(model);
+					email = (RawData)sfr.readObject();
+					if (email == null) {
 						throw new NullPointerException();
 					}
 					sfr.close();
 					// Open the file writer.
 					TextFileWriter fw = null;
-					if( _log != null ) {
+					if (log != null) {
 						// User wants to write to a log.
 						fw = new TextFileWriter();
-						fw.open( _log );
+						fw.open(log);
 					}
 					// Perform the dump.
-					_email.dump( TokenTable.NORMAL_EMAIL, fw );
-					_email.dump( TokenTable.SPAM_EMAIL, fw );
+					email.dump(TokenTable.NORMAL_EMAIL, fw);
+					email.dump(TokenTable.SPAM_EMAIL, fw);
 					// Close the file writer (if open).
-					if( fw != null ) {
+					if (fw != null) {
 						fw.close();
-					}
-					else {
+					} else {
 						System.out.println();
 					}
-				}
-				else {
-					System.err.println( "ERROR: Cannot perform dump because model file does not exist." );
+				} else {
+					System.err.println("ERROR: Cannot perform dump because model file does not exist.");
 					System.exit(1);
 				}
 				break;
 			default:
-				System.err.println( "ERROR: Neither training nor dump mode was specified.\n" );
+				System.err.println("ERROR: Neither training nor dump mode was specified.\n");
 				usage();
 				System.exit(1);
 		}
@@ -327,31 +322,31 @@ public class BSFTrain {
 	 * Displays usage notes.
 	 */
 	public void usage() {
-		System.out.println( "Usage: java -classpath .:./java-getopt-1.0.9.jar BSFTrain [options] -m modelFile -k tokenizer" );
-		System.out.println( "   Where commands and options are: " );
-		System.out.println( "          -s       Treat input as spam." );
-		System.out.println( "          -n       Treat input as normal." );
-		System.out.println( "          -t       Run in training mode." );
-		System.out.println( "          -d       Run in dump mode." );
-		System.out.println( "          -g       NGram value if tokenizer is type NGram." );
-		System.out.println( "          -m file  Load/save statistical model." );
-		System.out.println( "          -k name  Load tokenizer 'name'." );
-		System.out.println( "          -f file  Mail file to process.");
-		System.out.println( "          -l file  Log file to output dump to.");
+		System.out.println("Usage: java -classpath .:./java-getopt-1.0.9.jar BSFTrain [options] -m modelFile -k tokenizer");
+		System.out.println("   Where commands and options are: " );
+		System.out.println("          -s       Treat input as spam." );
+		System.out.println("          -n       Treat input as normal." );
+		System.out.println("          -t       Run in training mode." );
+		System.out.println("          -d       Run in dump mode." );
+		System.out.println("          -g       NGram value if tokenizer is type NGram." );
+		System.out.println("          -m file  Load/save statistical model." );
+		System.out.println("          -k name  Load tokenizer 'name'." );
+		System.out.println("          -f file  Mail file to process.");
+		System.out.println("          -l file  Log file to output dump to.");
 	}
 	
 	public static void main(String[] args) {
 
-		BSFTrain train = new BSFTrain( args );
+		BSFTrain train = new BSFTrain(args);
 		
-		if( args.length < 3 ) {
+		if (args.length < 3) {
 			train.usage();
-			System.exit( 1 );
+			System.exit(1);
 		}
 		
-		System.out.println( "Standby..." );
+		System.out.println("Standby...");
 		train.run();
-		System.out.println( "Finished." );
+		System.out.println("Finished.");
 	}
 	
 }

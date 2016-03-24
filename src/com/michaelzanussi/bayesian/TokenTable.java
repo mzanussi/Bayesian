@@ -21,38 +21,28 @@ public class TokenTable extends AbstractTable implements Serializable {
 	public static final int SPAM_EMAIL = 2;
 	
 	// The total email count.
-	private int _email;
+	private int email;
 
 	// The total token count for all email.
-	private int _tokens;
+	private int tokens;
 
 	// The hash table for this email type.
-	private MondoHashTable _table;
+	private MondoHashTable table;
 	
-	// The email type (see constants above).
-	private int _emailType;
+	/**
+	 * Because: It is strongly recommended that all serializable 
+	 * classes explicitly declare serialVersionUID values. 
+	 */
+	private static final long serialVersionUID = 4744371831848114827L;
 	
 	/**
 	 * No-arg constructor.
 	 */
 	public TokenTable() {
 		
-		this(0);
-		
-	}
-	
-	/**
-	 * Standard constructor that constructs an object of a certain
-	 * email type (normal or spam).
-	 * 
-	 * @param emailType the type of email this token table represents.
-	 */
-	public TokenTable( int emailType ) {
-		
-		_email = 0;
-		_emailType = emailType;
-		_table = new MondoHashTable();
-		_tokens = 0;
+		email = 0;
+		table = new MondoHashTable();
+		tokens = 0;
 		
 	}
 	
@@ -63,7 +53,7 @@ public class TokenTable extends AbstractTable implements Serializable {
 	 */
 	public int getTokenCount() {
 		
-		return _tokens;
+		return tokens;
 		
 	}
 	
@@ -74,7 +64,7 @@ public class TokenTable extends AbstractTable implements Serializable {
 	 */
 	public int getEmailCount() {
 		
-		return _email;
+		return email;
 		
 	}
 	
@@ -85,7 +75,7 @@ public class TokenTable extends AbstractTable implements Serializable {
 	 */
 	public MondoHashTable getTable() {
 		
-		return _table;
+		return table;
 		
 	}
 	
@@ -98,33 +88,29 @@ public class TokenTable extends AbstractTable implements Serializable {
 	 * 
 	 * @param fw the object containing the file being written to.
 	 */
-	public void dump( TextFileWriter fw ) {
+	public void dump(TextFileWriter fw) {
 
 		DecimalFormat df = new DecimalFormat("0.0000000000");
 		
-		if( fw == null ) {
+		if (fw == null) {
+			System.out.println("Email processed   : " + email);
+			System.out.println("Total token count : " + tokens);
+			System.out.println("Unique token count: " + table.size());
+		} else {
+			fw.writeln("Email processed   : " + email);
+			fw.writeln("Total token count : " + tokens);
+			fw.writeln("Unique token count: " + table.size());
 			
-			System.out.println( "Email processed   : " + _email );
-			System.out.println( "Total token count : " + _tokens );
-			System.out.println( "Unique token count: " + _table.size() );
-			
-		}
-		else {
-			
-			fw.writeln( "Email processed   : " + _email );
-			fw.writeln( "Total token count : " + _tokens );
-			fw.writeln( "Unique token count: " + _table.size() );
-			
-			fw.writeln( "\nCount\t\tProb (cnt/tot)\t\tKey" );
-			fw.writeln(   "-----\t\t--------------\t\t---------");
-			Set set = _table.entrySet();
+			fw.writeln("\nCount\t\tProb (cnt/tot)\t\tKey");
+			fw.writeln("-----\t\t--------------\t\t---------");
+			Set set = table.entrySet();
 			Iterator it = set.iterator();
-			while( it.hasNext() ) {
+			while (it.hasNext()) {
 				MondoHashTable.Entry e = (MondoHashTable.Entry)it.next();
 				String str = (String)e.getKey();
 				Integer i = (Integer)e.getValue();
-				String freq = df.format( (double)i.intValue() / _tokens );
-				fw.writeln( i.intValue() + "\t\t\t" + freq + "\t\t" + str );
+				String freq = df.format((double)i.intValue() / tokens);
+				fw.writeln(i.intValue() + "\t\t\t" + freq + "\t\t" + str);
 			}
 			fw.writeln( "\n" );
 			
@@ -144,7 +130,7 @@ public class TokenTable extends AbstractTable implements Serializable {
 	 * of the NGram.
 	 * @return the number of emails processed. 
 	 */
-	public int process( File file, String tokenizerClass, int nGram ) {
+	public int process(File file, String tokenizerClass, int nGram) {
 
 		// The running tally of emails processed.
 		int count = 0;
@@ -160,12 +146,12 @@ public class TokenTable extends AbstractTable implements Serializable {
 
 		// Open email file. May be direct file access or standard input.
 		TextFileReader fr = new TextFileReader();
-		fr.open( file );
+		fr.open(file);
 
 		
 		// Begin processing each line from the mailbox...
 		String input = null;
-		while( ( input = fr.readLine() ) != null ) {
+		while ((input = fr.readLine()) != null) {
 
 			// If we need to check for the postmark, we're looking for a
 			// new email message. This segment of code is only executed
@@ -174,12 +160,12 @@ public class TokenTable extends AbstractTable implements Serializable {
 			// tokenizable strings, so we shouldn't treat such a line as
 			// null). If it is the postmark, increment email count and
 			// inform the system we're inside the header.
-			if( checkForPostmark ) {
+			if (checkForPostmark) {
 				checkForPostmark = false;
-				String firstWord = getFirstWord( input );
+				String firstWord = getFirstWord(input);
 				// New email encountered.
-				if( firstWord.equals( "From" ) ) {
-					_email++; count++;
+				if (firstWord.equals("From")) {
+					email++; count++;
 					header = true;
 					postmark = true;
 				}
@@ -189,10 +175,10 @@ public class TokenTable extends AbstractTable implements Serializable {
 			// throw out everything except From:, To: and Subject:. For the
 			// fields we want, we need to ignore the field-name and
 			// use only the field-body.
-			if( header ) {
+			if (header) {
 				
 				// We can ignore the postmark, if this is where we're at.
-				if( postmark ) {
+				if (postmark) {
 					postmark = false;
 					continue;
 				}
@@ -200,7 +186,7 @@ public class TokenTable extends AbstractTable implements Serializable {
 				// If we've hit a null line, the message body is probably
 				// next, but we need to make sure this is or isn't an
 				// empty message body; hence we'll check for the postmark.
-				if( input.length() == 0 ) {
+				if (input.length() == 0) {
 					header = false;
 					checkForPostmark = true;
 					continue;
@@ -208,13 +194,12 @@ public class TokenTable extends AbstractTable implements Serializable {
 				
 				// Get the first word from the input line and see what it is.
 				// Keep what we want and throw away the rest.
-				String fieldName = getFirstWord( input );
-				if( fieldName.equals( "From:" ) || fieldName.equals( "To:" ) || fieldName.equals( "Subject:" ) ) {
+				String fieldName = getFirstWord(input);
+				if (fieldName.equals("From:") || fieldName.equals("To:") || fieldName.equals("Subject:")) {
 					// We're not interested in the field-name, just the
 					// field-body. Throw away the field-name.
-					input = input.substring( getPosition() );
-				}
-				else {
+					input = input.substring(getPosition());
+				} else {
 					continue;
 				}
 				
@@ -224,7 +209,7 @@ public class TokenTable extends AbstractTable implements Serializable {
 			// one, the next line might be the postmark, so we need to 
 			// check. Don't bother trying to process the null line, just
 			// move onto the next line of input.
-			if( !header && input.length() == 0 ) {
+			if (!header && input.length() == 0) {
 				checkForPostmark = true;
 				continue;
 			}
@@ -232,28 +217,28 @@ public class TokenTable extends AbstractTable implements Serializable {
 			// See special case below for nGram-type tokenizers.
 			// Take the previous incomplete token and append to it
 			// the next line of input (wrap-around).
-			if( wraparound ) {
+			if (wraparound) {
 				input = prevToken + input;
 				wraparound = false;
 				prevToken = "";
 			}
 			
-			// Attempt to load and instatiate dynamically the tokenizer.
-			SkippingTokenizer tokenizer = getTokenizer( tokenizerClass );
+			// Attempt to load and instantiate dynamically the tokenizer.
+			SkippingTokenizer tokenizer = getTokenizer(tokenizerClass);
 			
 			// Set NGram. We can do this whether the tokenizer is NGram-type or not.
-			tokenizer.setNGram( nGram );
+			tokenizer.setNGram(nGram);
 
 			// Now, break up the input line into tokens.
-			tokenizer.setStringToTokenize( input );
-			while( tokenizer.hasMoreTokens() ) {
+			tokenizer.setStringToTokenize(input);
+			while (tokenizer.hasMoreTokens()) {
 				
 				// Get the token.
 				String s = tokenizer.nextToken();
 
 				// We don't want to store empty tokens, which can be possible
 				// to produce with highly specialized tokenizers. So, ignore.
-				if( s.length() == 0 ) {
+				if (s.length() == 0) {
 					continue;
 				}
 				
@@ -264,7 +249,7 @@ public class TokenTable extends AbstractTable implements Serializable {
 				// next line of input (wrap-around). Should there be no more lines 
 				// of input, this token won't matter anyway since it doesn't
 				// satisfy the exact NGram length.
-				if( nGram > 0 && s.length() != nGram ) {
+				if (nGram > 0 && s.length() != nGram) {
 					wraparound = true;
 					prevToken = s;
 					break;
@@ -274,19 +259,19 @@ public class TokenTable extends AbstractTable implements Serializable {
 				// exist, it's the first time we've seen this token, so
 				// add it. Otherwise, update the token count for this
 				// token.
-				Object o = _table.get( s );
-				if( o == null ) {
-					_table.put( s, new Integer( 1 ) );
-				}
-				else {
+				Object o = table.get(s);
+				if (o == null) {
+					table.put(s, new Integer(1));
+				} else {
 					int i = ((Integer)o).intValue();
-					_table.put( s, new Integer( i + 1 ) );
+					table.put(s, new Integer(i + 1));
 				}
 
 				// Update the total number of tokens processed.
-				_tokens++;
+				tokens++;
 				
 			}
+			
 		}
 		
 		// Close input.

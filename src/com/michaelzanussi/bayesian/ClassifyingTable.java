@@ -17,24 +17,24 @@ import java.util.*;
 public class ClassifyingTable extends AbstractTable {
 
 	// The token table for the unknown email.
-	private MondoHashTable _testData;
+	private MondoHashTable testData;
 	
 	// These instance variables hold the priors for both email types
 	// as well as the total email (spam+normal) that have been processed.
-	private double _prNorm;
-	private double _prSpam;
-	private int _totEmail;
+	private double prNorm;
+	private double prSpam;
+	private int totEmail;
 	
 	// The final classification result for the unknown sample.
-	private String _classification;
+	private String classification;
 	
 	// The two separate token tables for the email.
-	private TokenTable _normal;
-	private TokenTable _spam;
+	private TokenTable normal;
+	private TokenTable spam;
 	
 	// The tokenizer being used, and optional nGram.
-	private String _tokenizer;
-	private int _nGram;
+	private String tokenizer;
+	private int nGram;
 	
 	/**
 	 * Construct a ClassifyingTable object using pre-existing token tables and
@@ -47,22 +47,22 @@ public class ClassifyingTable extends AbstractTable {
 	 * of the NGram.
 	 * @throws NullPointException if any parameters are <code>null</code>.
 	 */
-	public ClassifyingTable( TokenTable normal, TokenTable spam, String tokenizerClass, int nGram ) {
+	public ClassifyingTable(TokenTable normal, TokenTable spam, String tokenizerClass, int nGram) {
 		
-		if( normal == null || spam == null || tokenizerClass == null ) {
+		if (normal == null || spam == null || tokenizerClass == null) {
 			throw new NullPointerException();
 		}
 		
-		_normal = normal;
-		_spam = spam;
-		_tokenizer = tokenizerClass;
-		_nGram = nGram;
+		this.normal = normal;
+		this.spam = spam;
+		tokenizer = tokenizerClass;
+		this.nGram = nGram;
 		
-		_testData = new MondoHashTable();
+		testData = new MondoHashTable();
 		
-		_totEmail = 0;
-		_prNorm = 0.0;
-		_prSpam = 0.0;
+		totEmail = 0;
+		prNorm = 0.0;
+		prSpam = 0.0;
 		
 	}
 
@@ -75,15 +75,15 @@ public class ClassifyingTable extends AbstractTable {
 	 * @param file the sample email to classify.
 	 * @return the classification. 
 	 */
-	public String classify( File file ) {		
+	public String classify(File file) {		
 
 		// Calculate total email count and normal/spam priors, saving a 
 		// copy of the priors for later use.
-		_totEmail = _normal.getEmailCount() + _spam.getEmailCount();
-		double priorN = (double)_normal.getEmailCount() / _totEmail;
-		double priorS = (double)_spam.getEmailCount() / _totEmail;
-		_prNorm = priorN; 
-		_prSpam = priorS; 
+		totEmail = normal.getEmailCount() + spam.getEmailCount();
+		double priorN = (double)normal.getEmailCount() / totEmail;
+		double priorS = (double)spam.getEmailCount() / totEmail;
+		prNorm = priorN; 
+		prSpam = priorS; 
 		
 		// Used in processing the email headers.
 		boolean header = true;
@@ -94,31 +94,31 @@ public class ClassifyingTable extends AbstractTable {
 
 		// Open email file. May be direct file access or standard input.
 		TextFileReader fr = new TextFileReader();
-		fr.open( file );
+		fr.open(file);
 
 		String input = null;
 		
 		// Begin processing each line from the mailbox...
-		while( ( input = fr.readLine() ) != null ) {
+		while ((input = fr.readLine()) != null) {
 
 			// If we're processing the header, we'll want to be sure to
 			// throw out everything except From:, To: and Subject:. For the
 			// fields we want, we need to ignore the field-name and
 			// use only the field-body.
-			if( header ) {
+			if (header) {
 				
 				// If we've hit a null line, the message body is probably
 				// next, but we need to make sure this is or isn't an
 				// empty message body; hence we'll check for the postmark.
-				if( input.length() == 0 ) {
+				if (input.length() == 0) {
 					header = false;
 					continue;
 				}
 				// Get the first word from the input line and see what it is.
 				// Keep what we want and throw away the rest.
-				String fieldName = getFirstWord( input );
-				if( fieldName.equals( "From:" ) || fieldName.equals( "To:" ) || fieldName.equals( "Subject:" ) ) {
-					input = input.substring( getPosition() );
+				String fieldName = getFirstWord(input);
+				if (fieldName.equals("From:") || fieldName.equals("To:") || fieldName.equals("Subject:")) {
+					input = input.substring(getPosition());
 				}
 				else {
 					continue;
@@ -129,28 +129,28 @@ public class ClassifyingTable extends AbstractTable {
 			// See special case below for nGram-type tokenizers.
 			// Take the previous incomplete token and append to it
 			// the next line of input.
-			if( wraparound ) {
+			if (wraparound) {
 				input = prevToken + input;
 				wraparound = false;
 				prevToken = "";
 			}
 			
 			// Attempt to load and instatiate dynamically the tokenizer.
-			SkippingTokenizer tokenizer = getTokenizer( _tokenizer );
+			SkippingTokenizer tokenizer = getTokenizer(this.tokenizer);
 			
 			// Set NGram. We can do this whether the tokenizer is NGram-type or not.
-			tokenizer.setNGram( _nGram );
+			tokenizer.setNGram(nGram);
 
 			// Now, break up the input line into tokens.
-			tokenizer.setStringToTokenize( input );
-			while( tokenizer.hasMoreTokens() ) {
+			tokenizer.setStringToTokenize(input);
+			while (tokenizer.hasMoreTokens()) {
 				
 				// Get the token.
 				String s = tokenizer.nextToken();
 
 				// We don't want to store empty strings (as possible with highly
 				// specialized tokenizers) so ignore.
-				if( s.length() == 0 ) {
+				if (s.length() == 0) {
 					continue;
 				}
 				
@@ -160,7 +160,7 @@ public class ClassifyingTable extends AbstractTable {
 				// and we'll need to take this partial token and prepend it to the
 				// next line of input. Should there be no more lines of input, this 
 				// token won't matter anyway.
-				if( _nGram > 0 && s.length() != _nGram ) {
+				if (nGram > 0 && s.length() != nGram) {
 					wraparound = true;
 					prevToken = s;
 					break;
@@ -169,28 +169,25 @@ public class ClassifyingTable extends AbstractTable {
 				// Calculate the naive Bayes approximation. Since the approximation
 				// returned is log-likelihood, we're performing a sum rather than
 				// a product.
-				double nBayes = bayes( _normal, s ); priorN += nBayes;
-				double sBayes = bayes( _spam, s ); priorS += sBayes;
+				double nBayes = bayes(normal, s); priorN += nBayes;
+				double sBayes = bayes(spam, s); priorS += sBayes;
 				
 				// Attempt to get the token from the table. If it doesn't
 				// exist, it's the first time we've seen this token, so
 				// add it. Otherwise, update the token count for this
 				// token.
-				Object o = _testData.get( s );
-				if( o == null ) {
+				Object o = testData.get(s);
+				if (o == null) {
 					// It's the first time we've seen this token; add it.
-					_testData.put( s, new _Entry( 1, nBayes, sBayes ) );
-				}
-				else {
+					testData.put(s, new Entry(1, nBayes, sBayes));
+				} else {
 					// Token exists, so update its count and approximations.
-					_Entry e = (_Entry)o;
-					_testData.put( s, new _Entry( 
-							e.getCount() + 1, 
-							e.getNBayes() + nBayes, 
-							e.getSBayes() + sBayes ) );
+					Entry e = (Entry)o;
+					testData.put(s, new Entry(e.getCount() + 1, e.getNBayes() + nBayes, e.getSBayes() + sBayes));
 				}
 				
 			}
+			
 		}
 		
 		// Close the input.
@@ -198,16 +195,16 @@ public class ClassifyingTable extends AbstractTable {
 
 		// Format the classification string, store it, and send it back.
 		DecimalFormat df = new DecimalFormat("0.00");
-		String strN = df.format( priorN );
-		String strS = df.format( priorS );
-		String strD = df.format( Math.abs( priorN - priorS ) );
+		String strN = df.format(priorN);
+		String strS = df.format(priorS);
+		String strD = df.format(Math.abs(priorN - priorS));
 		StringBuffer output = new StringBuffer();
-		output.append( "X-Spam-Status: " );
-		output.append( priorN > priorS ? "NORMAL, " : "SPAM, " );
-		output.append( "N: " + strN + ", S: " + strS + ", Diff: " + strD );
-		_classification = output.toString();
+		output.append("X-Spam-Status: ");
+		output.append(priorN > priorS ? "NORMAL, " : "SPAM, ");
+		output.append("N: " + strN + ", S: " + strS + ", Diff: " + strD);
+		classification = output.toString();
 		
-		return _classification;
+		return classification;
 		
 	}
 
@@ -216,47 +213,48 @@ public class ClassifyingTable extends AbstractTable {
 	 * 
 	 * @param file the log file to write to.
 	 */
-	public void dump( File file ) {
+	public void dump(File file) {
 		
 		TextFileWriter fw = new TextFileWriter();
-		fw.open( file );
+		fw.open(file);
 		
-		fw.writeln( "Tokenizer: " + _tokenizer + "\n" );
+		fw.writeln("Tokenizer: " + tokenizer + "\n");
 		
 		DecimalFormat df = new DecimalFormat("0.000000");
 		DecimalFormat small = new DecimalFormat("0.0");
-		String priorN = df.format( _prNorm );
-		String priorS = df.format( _prSpam );
-		fw.writeln( "Norm Table: Email=" + _normal.getEmailCount() + 
-				", Tokens=" + _normal.getTokenCount() +
-				", Unique=" + _normal.getTable().size() +
-				", Prior=" + priorN );
-		fw.writeln( "Spam Table: Email=" + _spam.getEmailCount() + 
-				", Tokens=" + _spam.getTokenCount() +
-				", Unique=" + _spam.getTable().size() +
-				", Prior=" + priorS );
+		String priorN = df.format(prNorm);
+		String priorS = df.format(prSpam);
+		fw.writeln("Norm Table: Email=" + normal.getEmailCount() + 
+				", Tokens=" + normal.getTokenCount() +
+				", Unique=" + normal.getTable().size() +
+				", Prior=" + priorN);
+		fw.writeln("Spam Table: Email=" + spam.getEmailCount() + 
+				", Tokens=" + spam.getTokenCount() +
+				", Unique=" + spam.getTable().size() +
+				", Prior=" + priorS);
 		
-		fw.writeln( "\n" + _classification );
+		fw.writeln("\n" + classification);
 		
 		fw.writeln( "\nBayes Norm\t\tBayes Spam\t\t  Diff\t\t\tCount\tToken");
 		fw.writeln(   "----------\t\t----------\t\t  ----\t\t\t-----\t-----");
 		
-		Set s = _testData.entrySet();
+		Set s = testData.entrySet();
 		Iterator i = s.iterator();
-		while( i.hasNext() ) {
+		while (i.hasNext()) {
 			MondoHashTable.Entry me = (MondoHashTable.Entry)i.next();
 			String key = (String)me.getKey();
-			_Entry e = (_Entry)me.getValue();
-			String strN = df.format( e.getNBayes() );
-			String strS = df.format( e.getSBayes() );
-			String strD = small.format( Math.abs( e.getNBayes() - e.getSBayes() ) );
-			String like = ( e.getNBayes() > e.getSBayes() ? "n" : "s" );
-			fw.writeln( strN + "\t\t" + strS + "\t\t" + like + " " + strD + "\t\t\t" + e.getCount() + "\t\t" + key);
+			Entry e = (Entry)me.getValue();
+			String strN = df.format(e.getNBayes());
+			String strS = df.format(e.getSBayes());
+			String strD = small.format(Math.abs(e.getNBayes() - e.getSBayes()));
+			String like = (e.getNBayes() > e.getSBayes() ? "n" : "s");
+			fw.writeln(strN + "\t\t" + strS + "\t\t" + like + " " + strD + "\t\t\t" + e.getCount() + "\t\t" + key);
 		}
 		
-		fw.writeln( "\nEnd." );
+		fw.writeln("\nEnd.");
 		
 		fw.close();
+		
 	}
 
 	/**
@@ -265,27 +263,18 @@ public class ClassifyingTable extends AbstractTable {
 	 * @author <a href="mailto:zanussi@cs.unm.edu">Michael Zanussi</a>
 	 * @version 1.0 (20 Feb 2004) 
 	 */
-	private final static class _Entry {
+	private final static class Entry {
 		
 		// The token count.
-		private int _count;
+		private int count;
 		
 		// The naive Bayes approximation for this token.
 		// within normal email.
-		private double _nBayes;
+		private double nBayes;
 		
 		// The naive Bayes approximation for this token.
 		// within spam email.
-		private double _sBayes;
-		
-		/**
-		 * No-arg constructor.
-		 */
-		public _Entry() {
-			
-			this( 0, 0.0, 0.0 );
-			
-		}
+		private double sBayes;
 		
 		/**
 		 * Constructs an entry object built from token count and
@@ -295,11 +284,11 @@ public class ClassifyingTable extends AbstractTable {
 		 * @param nBayes the naive Bayes approximation (normal)
 		 * @param sBayes the naive Bayes approximation (spam)
 		 */
-		public _Entry( int count, double nBayes, double sBayes ) {
+		public Entry(int count, double nBayes, double sBayes) {
 			
-			_count = count;
-			_nBayes = nBayes;
-			_sBayes = sBayes;
+			this.count = count;
+			this.nBayes = nBayes;
+			this.sBayes = sBayes;
 			
 		}
 		
@@ -310,7 +299,7 @@ public class ClassifyingTable extends AbstractTable {
 		 */
 		public int getCount() {
 			
-			return _count;
+			return count;
 			
 		}
 		
@@ -321,7 +310,7 @@ public class ClassifyingTable extends AbstractTable {
 		 */
 		public double getNBayes() {
 			
-			return _nBayes;
+			return nBayes;
 			
 		}
 		
@@ -332,7 +321,7 @@ public class ClassifyingTable extends AbstractTable {
 		 */
 		public double getSBayes() {
 			
-			return _sBayes;
+			return sBayes;
 			
 		}
 		

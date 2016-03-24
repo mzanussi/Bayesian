@@ -30,35 +30,30 @@ import gnu.getopt.Getopt;
  */
 public class BSFTest {
 
-	// The email type being trained, either 
-	// NORMAL_EMAIL or SPAM_EMAIL (see the class
-	// TokenTable).
-	private int _emailType;
-	
 	// The statistical model file name.
-	private File _model;
+	private File model;
 	
 	// The input file (either direct or standard input).
-	private File _file;
+	private File file;
 	
 	// The log file.
-	private File _log;
+	private File log;
 	
 	// The name of the tokenizer.
-	private String _tokenizer;
+	private String tokenizer;
 
 	// The command line arguments.
-	private String[] _args;
+	private String[] args;
 	
 	// Holds the unknown email statistics.
-	private RawData _rawData;
+	private RawData rawData;
 	
 	/**
 	 * No-arg constructor.
 	 */
 	BSFTest() {
 		
-		this( null );
+		this(null);
 		
 	}
 	
@@ -67,15 +62,14 @@ public class BSFTest {
 	 *
 	 * @param args the command line arguments.
 	 */
-	BSFTest( String [] args ) {
+	BSFTest(String[] args) {
 		
-		_args = args;
-		_rawData = null;
-		_file = null;
-		_emailType = 00;
-		_log = null;
-		_model = null;
-		_tokenizer = null;
+		this.args = args;
+		rawData = null;
+		file = null;
+		log = null;
+		model = null;
+		tokenizer = null;
 		
 	}
 
@@ -84,13 +78,13 @@ public class BSFTest {
 	 */
 	public void run() {
 
-		Getopt option = new Getopt( "BSFTest", _args, "f:k:l:m:" );
+		Getopt option = new Getopt("BSFTest", args, "f:k:l:m:");
 		int ch;
-		while( ( ch = option.getopt() ) != -1 ) {
-			switch( ch ) {
+		while ((ch = option.getopt()) != -1) {
+			switch (ch) {
 				case 'f':
 					// Set the file to process email from (optional).
-					_file = new File( option.getOptarg() );
+					file = new File(option.getOptarg());
 					break;
 				case 'k':
 					// Set the tokenizer. Note: This option is basically useless
@@ -98,34 +92,34 @@ public class BSFTest {
 					// testing this email against. This is why there is no option
 					// for specifying the nGram value. However, since the specs
 					// require this option, it's included and verified.
-					_tokenizer = option.getOptarg();
+					tokenizer = option.getOptarg();
 					break;
 				case 'l':
 					// Set the log file to use for the classification log (optional).
-					_log = new File( option.getOptarg() );
+					log = new File(option.getOptarg());
 					break;
 				case 'm':
 					// Set the model statistics file. Assume extension has
 					// not been provided by user.
 					String fileName = option.getOptarg() + ".stat";
-					_model = new File( fileName );
+					model = new File(fileName);
 					break;
 				default:
 					// Unknown or illegal option, skip. If using getOpt,
 					// getOpt will return its own error messages.
 	
 			}
+			
 		}
 		
 		// With command line options dealt with, check if a tokenizer and
 		// a statistical model file were passed to us.
-		if( _tokenizer == null ) {
-			System.err.println( "ERROR: A tokenizer was not specified.\n" );
+		if (tokenizer == null) {
+			System.err.println("ERROR: A tokenizer was not specified.\n");
 			usage();
 			System.exit(1);
-		}
-		else if( _model == null ) {
-			System.err.println( "ERROR: A statistical model file was not specified.\n" );
+		} else if (model == null) {
+			System.err.println("ERROR: A statistical model file was not specified.\n");
 			usage();
 			System.exit(1);
 		}
@@ -133,12 +127,12 @@ public class BSFTest {
 		// Check if the model exists. If it does, open the model and store
 		// it off, then verify the tokenzier passed is correct. If the model
 		// doesn't exist, exit gracefully.
-		if( _model.exists() ) {
+		if (model.exists()) {
 			
 			// Open the model file.
 			SerializedFileReader sfr = new SerializedFileReader();
-			sfr.open( _model );
-			_rawData = (RawData) sfr.readObject();
+			sfr.open(model);
+			rawData = (RawData)sfr.readObject();
 			sfr.close();
 			
 			// Verify the passed tokenizer is the same as the one stored. 
@@ -146,34 +140,33 @@ public class BSFTest {
 			// reverting to the original tokenizer used. In actuality, we're 
 			// not reverting since we're just ignoring the command line
 			// option anyhow (see note above for option -m).
-			if( !_tokenizer.equals( _rawData.getTokenizer() ) ) {
-				System.err.println( "Warning: The specified tokenizer is incompatible with the " );
-				System.err.println( "         stored data tokenizer. Reverting to stored version." );
-				System.err.println( "         Specified is [" + _tokenizer + "]" );
-				System.err.println( "         Stored is [" + _rawData.getTokenizer() + "]\n" );
+			if (!tokenizer.equals(rawData.getTokenizer())) {
+				System.err.println("Warning: The specified tokenizer is incompatible with the ");
+				System.err.println("         stored data tokenizer. Reverting to stored version.");
+				System.err.println("         Specified is [" + tokenizer + "]");
+				System.err.println("         Stored is [" + rawData.getTokenizer() + "]\n");
 			}
 			
-		}
-		else {
+		} else {
 			// Oops, specified model doesn't exist.
-			System.err.println( "ERROR: The statistical model (" + _model + ") does not exist." );
-			System.err.println( "       Cannot proceed until analyzer has been trained." );
+			System.err.println("ERROR: The statistical model (" + model + ") does not exist.");
+			System.err.println("       Cannot proceed until analyzer has been trained.");
 			System.exit(1);
 		}
 
 		// Create a new classifier.
 		ClassifyingTable cl = new ClassifyingTable( 
-				_rawData.getTable( TokenTable.NORMAL_EMAIL ), 
-				_rawData.getTable( TokenTable.SPAM_EMAIL ), 
-				_rawData.getTokenizer(), 
-				_rawData.getNGram() );
+				rawData.getTable(TokenTable.NORMAL_EMAIL), 
+				rawData.getTable(TokenTable.SPAM_EMAIL), 
+				rawData.getTokenizer(), 
+				rawData.getNGram());
 		
 		// Classify the email. 
-		System.out.println( cl.classify( _file ) );
+		System.out.println(cl.classify(file));
 		
 		// Dump log, if necessary.
-		if( _log != null ) {
-			cl.dump( _log );
+		if (log != null) {
+			cl.dump(log);
 		}
 	
 	}
@@ -182,17 +175,17 @@ public class BSFTest {
 	 * Displays usage notes.
 	 */
 	public void usage() {
-		System.out.println( "Usage: java -classpath .:./java-getopt-1.0.9.jar BSFTest [options]  -m modelFile -k tokenizer" );
-		System.out.println( "   Where options are: " );
-		System.out.println( "          -f file  Single email to process (optional).");
-		System.out.println( "          -k name  Tokenizer." );
-		System.out.println( "          -m file  Load statistical model." );
-		System.out.println( "          -l file  Log file to output dump to (optional).");
+		System.out.println("Usage: java -classpath .:./java-getopt-1.0.9.jar BSFTest [options]  -m modelFile -k tokenizer");
+		System.out.println("   Where options are: ");
+		System.out.println("          -f file  Single email to process (optional).");
+		System.out.println("          -k name  Tokenizer.");
+		System.out.println("          -m file  Load statistical model.");
+		System.out.println("          -l file  Log file to output dump to (optional).");
 	}
 	
 	public static void main(String[] args) {
 
-		BSFTest test = new BSFTest( args );
+		BSFTest test = new BSFTest(args);
 		
 		if(args.length < 3) {
 			test.usage();
