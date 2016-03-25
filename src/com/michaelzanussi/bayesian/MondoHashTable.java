@@ -49,6 +49,12 @@ public class MondoHashTable implements Map<Object, Object>, Serializable {
 	 */
 	private static final long serialVersionUID = 486868479159968755L;
 
+	// ANALYSIS ONLY!
+	// Not for final release.	
+	public int  nColl = 0;
+	public long lPuts = 0;
+	public long lHash = 0;
+	
 	/**
 	 * No-arg constructor. Instantiates a new hash table of default
 	 * size DEFAULT_TABLE_SIZE.
@@ -405,6 +411,8 @@ public class MondoHashTable implements Map<Object, Object>, Serializable {
 			throw new NullPointerException("Key cannot be null.");
 		}
 
+		/* ANALYSIS ONLY! */ lPuts++;
+		
 		// Initialization.		
 		Object oldValue = null;
 		
@@ -549,6 +557,7 @@ public class MondoHashTable implements Map<Object, Object>, Serializable {
 	 */
 	private int index(Object key) {
 		
+		/* ANALYSIS ONLY! */ lHash++; 
 		return Math.abs(key.hashCode() % capacity());
 		
 	}
@@ -607,6 +616,7 @@ public class MondoHashTable implements Map<Object, Object>, Serializable {
 		while (table[index] != null && !key.equals(table[index].getKey()) && table[index] != AVAILABLE) {
 			
 			count++;
+			/* ANALYSIS ONLY! */ nColl++;
 			index = probe(index, count);
 			if (count == capacity()) {
 				throw new HashTableFullException("Hash table is full.");
@@ -625,6 +635,7 @@ public class MondoHashTable implements Map<Object, Object>, Serializable {
 			// or an empty slot appears.
 			while (table[index] != null && !key.equals(table[index].getKey())) {
 				count++;
+				/* ANALYSIS ONLY! */ nColl++;
 				index = probe(index, count);
 				if (count == capacity()) {
 					throw new HashTableFullException("Hash table is full.");
@@ -668,6 +679,7 @@ public class MondoHashTable implements Map<Object, Object>, Serializable {
 		// We have a collision, try and locate key using quadratic probing.
 		while (table[index] != null && !key.equals(table[index].getKey())) {
 			count++;
+			/* collisions */ nColl++;
 			index = probe(index, count);
 		}
 		
